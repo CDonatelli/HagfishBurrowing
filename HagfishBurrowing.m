@@ -5,10 +5,6 @@ if ~isempty(varargin)
 else
     sOut = struct;
 end
-    
-sOut = struct;
-%vars = who;
-%eval(['sOut=',cell2mat(vars(1))])
 
 FileNamePrefix = VideoReader(videoName);
 FrNum = FileNamePrefix.NumberOfFrames;
@@ -17,7 +13,7 @@ format = FileNamePrefix.VideoFormat;
 prompt = {'Enter start frame:','Enter end frame:','Enter skip rate:', 'Enter save name:'};
 dlgtitle = 'What do you want to digitize?';
 dims = [1 85];
-definput = {'1',num2str(FrNum),'1','saveName'};
+definput = {'1',num2str(FrNum),'1','outputName'};
 answer = inputdlg(prompt,dlgtitle,dims,definput);
     startFrame = str2num(answer{1});
     endFrame = str2num(answer{2});
@@ -56,27 +52,23 @@ Y=[];
     %median(BackLev(1),FishLev(2))
     
     % Test if the threshhold is good and edit if it isnt
-    if strcmp(convertCharsToStrings(format), 'Grayscale')
-        ThreshLevel = median([BackLev(2),FishLev(1)])/255;
-    else
-        choice = 1;
-        RawImage = read(FileNamePrefix,1);%get the first image to allow user to click the fish    
-        RawImage = imcrop(RawImage, rect);
-        BinaryImage = ProcessImage(RawImage,ThreshLevel);
-        imshow(BinaryImage)
-        while choice ~= 2
-            choice = input('Is this good? (1 = brighten fish, 0 = dim  fish, 2 = good): ');
-            if choice == 0
-                ThreshLevel = ThreshLevel - 0.025;
-                BinaryImage = ProcessImage(RawImage,ThreshLevel);
-                imshow(BinaryImage)
-            elseif choice == 1
-                ThreshLevel = ThreshLevel + 0.025;
-                BinaryImage = ProcessImage(RawImage,ThreshLevel);
-                imshow(BinaryImage)
-            else
-                ThreshLevel = ThreshLevel;
-            end
+    choice = 1;
+    RawImage = read(FileNamePrefix,1);%get the first image to allow user to click the fish    
+    RawImage = imcrop(RawImage, rect);
+    BinaryImage = ProcessImage(RawImage,ThreshLevel);
+    imshow(BinaryImage)
+    while choice ~= 2
+        choice = input('Is this good? (1 = brighten fish, 0 = dim  fish, 2 = good): ');
+        if choice == 0
+            ThreshLevel = ThreshLevel - 0.025;
+            BinaryImage = ProcessImage(RawImage,ThreshLevel);
+            imshow(BinaryImage)
+        elseif choice == 1
+            ThreshLevel = ThreshLevel + 0.025;
+            BinaryImage = ProcessImage(RawImage,ThreshLevel);
+            imshow(BinaryImage)
+        else
+            ThreshLevel = ThreshLevel;
         end
     end
 
@@ -166,16 +158,27 @@ for Index = 1:skipRate:endFrame
     hold off    %allow the image to be redrawn
 end
 
+digitizedFrames = startFrame:skipRate:endFrame;
+sOut.digizedFrames = digitizedFrames;
+sOut.midlines = Lines(digitizedFrames);
+new
+
+nfr = size(sOut.midlines,2);
+x = []; y = [];
+for i = 1:nfr
+    xPts = sgolayfilt(smooth(sOut.midlines(i).MidLine(:,1)), 2, 13);
+    yPts = sgolayfilt(smooth(-sOut.midlines(i).MidLine(:,2)), 2, 13);
+    randPts = rand(1,length(xPts))/1000; xPts = xPts+randPts';
+    % Generate equation if the midline
+    [pts, deriv, funct] = interparc(21, xPts, yPts, 'spline');
+    % add those points to an array
+    x = [x,pts(:,1)]; y = [y,pts(:,2)];
+end
+sOut.X = x; sOut.Y = y;
+
 close all   %close the image 
 figure
-hold on %see multiple traces
-digitizedFrames = startFrame:skipRate:endFrame;
-
-for i = 1:size(digitizedFrames,2)
-    plot(Lines(digitizedFrames(i)).MidLine(:,1),-Lines(digitizedFrames(i)).MidLine(:,2));
-end
-
-sOut.digizedFrames = digitizedFrames;
+plot(x,y)
 
 sOut.midLines = Lines(digitizedFrames);
 eval([saveName, '= sOut'])
@@ -289,16 +292,8 @@ end
 function FrameOut = ProcessImage(Frame,Level, varargin)
 %blur the image to kill line artifacts
 h = ones(5,5) / 25;
-BlurredImage = imfilter(Frame,h);
-[m,n] = size(BlurredImage);
-
-% assumes motionscope frame
-if median(Frame) == 0
-    FrameOut = BlurredImage;
-else
-    FrameOut = ~im2bw(BlurredImage,Level);       %make image binary and invert it so fish is white5
-end
-
+FrameOut = imfilter(Frame,h);
+[m,n] = size(FrameOut);
 
 FrameOut(1:5,:) = [];
 FrameOut(end-4:end,:) = [];

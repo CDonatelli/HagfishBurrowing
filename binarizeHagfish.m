@@ -1,4 +1,4 @@
-function dataStruct = binarizeHagfish(binaryVideo, videoData)
+function dataStruct = binarizeHagfish(saveName)
     
     dataStruct = struct;
     [dataStruct.videoName, dataStruct.videoPath] = uigetfile('*.*', ...
@@ -109,7 +109,7 @@ function dataStruct = binarizeHagfish(binaryVideo, videoData)
         end
     end
     
-    bwVideo = VideoWriter([dataStruct.videoPath,binaryVideo],'Grayscale AVI');
+    bwVideo = VideoWriter([dataStruct.videoPath,saveName,'_binary'],'Grayscale AVI');
     open(bwVideo)
     
     for i = 1:fishVideo.NumberOfFrames  
@@ -130,11 +130,11 @@ function dataStruct = binarizeHagfish(binaryVideo, videoData)
     
     close(bwVideo)
     
-    bwVideo = VideoReader([dataStruct.videoPath,binaryVideo,'.avi']);
+    bwVideo = VideoReader([dataStruct.videoPath,saveName,'_binary.avi']);
         dataStruct.croppedRes = [bwVideo.Height, bwVideo.Width];
         dataStruct.bwFormat = bwVideo.VideoFormat;
     
-    save([dataStruct.videoPath,videoData], 'dataStruct')
+    save([dataStruct.videoPath,saveName,'_Data'], 'dataStruct')
 
 
 function [FrameOut] = ProcessImage(Frame, Level)
