@@ -161,7 +161,6 @@ end
 digitizedFrames = startFrame:skipRate:endFrame;
 sOut.digizedFrames = digitizedFrames;
 sOut.midlines = Lines(digitizedFrames);
-new
 
 nfr = size(sOut.midlines,2);
 x = []; y = [];
@@ -170,7 +169,7 @@ for i = 1:nfr
     yPts = sgolayfilt(smooth(-sOut.midlines(i).MidLine(:,2)), 2, 13);
     randPts = rand(1,length(xPts))/1000; xPts = xPts+randPts';
     % Generate equation if the midline
-    [pts, deriv, funct] = interparc(21, xPts, yPts, 'spline');
+    [pts, deriv, funct] = interparc(51, xPts, yPts, 'spline');
     % add those points to an array
     x = [x,pts(:,1)]; y = [y,pts(:,2)];
 end
