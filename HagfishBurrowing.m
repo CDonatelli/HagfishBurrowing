@@ -71,6 +71,7 @@ Y=[];
             ThreshLevel = ThreshLevel;
         end
     end
+    close all
 
 for Index = 1:skipRate:endFrame
     RawImage = read(FileNamePrefix,Index);%get the first image to allow user to click the fish    
