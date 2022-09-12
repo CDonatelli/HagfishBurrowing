@@ -75,21 +75,21 @@ Y=[];
 for Index = startFrame:skipRate:endFrame
     RawImage = read(FileNamePrefix,Index);%get the first image to allow user to click the fish    
     RawImage = imcrop(RawImage, rect);
-    if (size(X,1) == 0 || BinaryImage(round(Y),round(X)) == 0)
+%     if (size(X,1) == 0 || BinaryImage(round(Y),round(X)) == 0)
         BinaryImage = ProcessImage(RawImage,ThreshLevel);
-        figure('Name','Click the nose of the Fish','NumberTitle','off')
+%         figure('Name','Click the nose of the Fish','NumberTitle','off')
         imshow(BinaryImage);
         [X Y] = ginput(1);  %get the location of the fish
-    end
-    BinaryImage = ProcessImage(RawImage,ThreshLevel,[X,Y]);
+%     end
+%     BinaryImage = ProcessImage(RawImage,ThreshLevel,[X,Y]);
     LabelImage = bwlabeln(BinaryImage,4);       %label the image to use image props          
-    imshow(BinaryImage);
+%     imshow(BinaryImage);
     title(['Frame ',num2str(Index),' out of ',num2str(endFrame)])
     ImageStats = regionprops(LabelImage,'all'); %get stats on the labelled image
     
     FishRegion = LabelImage(round(Y),round(X)); %get the region number of the fish
     FishImage = BinaryImage;%.*(LabelImage==FishRegion);  %kill all the rest of the binary image
-    imshow(FishImage)       %show just the fish to make sure all is well
+    %imshow(FishImage)       %show just the fish to make sure all is well
     hold on;
     plot(X,Y,'or'); %show the dot the user clicked
     
@@ -116,9 +116,9 @@ for Index = startFrame:skipRate:endFrame
     %for ease this will be the point furthest from the user clicked point
     %in the opposite direction from the centroid.
     
-    Nose = FindNose(FishImage, X, Y, AngleToNext+pi);
-    X=Nose(1);
-    Y=Nose(2);
+%     Nose = FindNose(FishImage, X, Y, AngleToNext+pi);
+%     X=Nose(1);
+%     Y=Nose(2);
     plot(X,Y,'og');
     
     % set the radius for the midline finding circle 
