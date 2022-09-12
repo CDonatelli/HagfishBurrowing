@@ -111,7 +111,7 @@ function dataStruct = binarizeHagfish(saveName)
     
     bwVideo = VideoWriter([dataStruct.videoPath,saveName,'_binary'],'Grayscale AVI');
     open(bwVideo)
-    
+   
     for i = 1:fishVideo.NumberOfFrames  
         %Read in frames
 %         if dataStruct.cropRect == 0
