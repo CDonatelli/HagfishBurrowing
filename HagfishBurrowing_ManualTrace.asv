@@ -1,10 +1,8 @@
-function sOut = HagfishBurrowing(videoName, varargin)
+function dataStruct = HagfishBurrowing_ManualTrace()
 
-if ~isempty(varargin)
-    sOut = varargin{1};
-else
-    sOut = struct;
-end
+dataStruct = struct;
+[dataStruct.videoName, dataStruct.videoPath] = uigetfile('*.*', ...
+    'Select the video you want to binarize');
 
 FileNamePrefix = VideoReader(videoName);
 FrNum = FileNamePrefix.NumberOfFrames;
@@ -17,8 +15,9 @@ definput = {'1',num2str(FrNum),'1','outputName'};
 answer = inputdlg(prompt,dlgtitle,dims,definput);
     startFrame = str2num(answer{1});
     endFrame = str2num(answer{2});
-    skipRate = str2num(answer{3});
-    saveName = answer{4};
+    dataStruct.originalFrameRate = str2num(answer{3});
+    skipRate = str2num(answer{4});
+    saveName = answer{5};
 sOut.endFrame = endFrame;
 sOut.skipRate = skipRate;
 
@@ -27,132 +26,25 @@ Lines(1).MidLine = [];
 X=[];
 Y=[];
 
+FrRate = dataStruct.originalFrameRate/skipRate;
+
     ImStart = read(FileNamePrefix,1);
     
     % Get a rectangle to limit search area to area the fish is swimming in
+    disp("Crop vieo to zoom in on the critter.")
     rect = CropVideo(ImStart);
     sOut.rect = rect;
-    
-    % Get the rough levels of the background and of the fish  
-    % (assuming background is plain and uniform for now)
-%     if strcmp(convertCharsToStrings(format), 'Grayscale')
-%         [BackLev, FishLev] = GetLevelsBW(imcrop(ImStart, rect));
-%     else
-%         [BackLev, FishLev] = GetLevels(imcrop(ImStart, rect));
-%     end
-    % or
-    %[BackLev, FishLev] = GetLevelsBW(imcrop(ImStart,rect));
-    
-    sOut.backLevel = BackLev; sOut.fishLevel = FishLev;
-    
-    %This bit assumes the fish is dark and the background is light
-    ThreshLevel = median([BackLev(2),FishLev(1)])/255;
 
-    % Use this if the fish is light and the back is dark
-    %median(BackLev(1),FishLev(2))
-    
-    % Test if the threshhold is good and edit if it isnt
-    choice = 1;
-    RawImage = read(FileNamePrefix,1);%get the first image to allow user to click the fish    
-    RawImage = imcrop(RawImage, rect);
-    BinaryImage = ProcessImage(RawImage,ThreshLevel);
-    imshow(BinaryImage)
-%     while choice ~= 2
-%         choice = input('Is this good? (1 = brighten fish, 0 = dim  fish, 2 = good): ');
-%         if choice == 0
-%             ThreshLevel = ThreshLevel - 0.025;
-%             BinaryImage = ProcessImage(RawImage,ThreshLevel);
-%             imshow(BinaryImage)
-%         elseif choice == 1
-%             ThreshLevel = ThreshLevel + 0.025;
-%             BinaryImage = ProcessImage(RawImage,ThreshLevel);
-%             imshow(BinaryImage)
-%         else
-%             ThreshLevel = ThreshLevel;
-%         end
-%     end
-
-for Index = 1:skipRate:endFrame
+for Index = startFrame:skipRate:endFrame
     RawImage = read(FileNamePrefix,Index);%get the first image to allow user to click the fish    
     RawImage = imcrop(RawImage, rect);
-    if (size(X,1) == 0 || BinaryImage(round(Y),round(X)) == 0)
-%         BinaryImage = ProcessImage(RawImage,ThreshLevel);
-        BinaryImage = RawImage;
-        figure('Name','Click the nose of the Fish','NumberTitle','off')
-        imshow(BinaryImage);
-        [X Y] = ginput(1);  %get the location of the fish
-    end
-    BinaryImage = ProcessImage(RawImage,ThreshLevel,[X,Y]);
-    LabelImage = bwlabeln(BinaryImage,4);       %label the image to use image props          
-    imshow(BinaryImage);
+        imshow(RawImage);
+        disp("Click along the fish. Be sure to get the nose and tail")
+        [X Y] = ginput();  %get the location of the fish
     title(['Frame ',num2str(Index),' out of ',num2str(endFrame)])
-    ImageStats = regionprops(LabelImage,'all'); %get stats on the labelled image
     
-    FishRegion = LabelImage(round(Y),round(X)); %get the region number of the fish
-    FishImage = BinaryImage;%.*(LabelImage==FishRegion);  %kill all the rest of the binary image
-    imshow(FishImage)       %show just the fish to make sure all is well
     hold on;
-    plot(X,Y,'or'); %show the dot the user clicked
-    
-    %figure out which way the rest of the fish lies.
-    %going to assume it is in the direction of the centroid from the point
-    %on the head.  Setting that general direction establishes a polarity
-    %for the midline search to proceed down the animal rather than from the
-    %head to the nose.
-    if FishRegion == 0
-        [BinaryImage, ThreshLevel] = reProcessImage(RawImage,ThreshLevel);
-        [X Y] = ginput(1);
-        LabelImage = bwlabeln(BinaryImage,4);       %label the image to use image props          
-        ImageStats = regionprops(LabelImage,'all'); %get stats on the labelled image
-        FishRegion = LabelImage(round(Y),round(X));
-        FishImage = BinaryImage;
-        hold on;
-        plot(X,Y,'or'); %show the dot the user clicked
-    end
-    XTemp=ImageStats(FishRegion).Centroid(1)-X;
-    YTemp=ImageStats(FishRegion).Centroid(2)-Y;
-    [AngleToNext,D] = cart2pol(XTemp, YTemp);
-    
-    %use teh general direction of teh rest of the body to find the 'nose'.
-    %for ease this will be the point furthest from the user clicked point
-    %in the opposite direction from the centroid.
-    
-    Nose = FindNose(FishImage, X, Y, AngleToNext+pi);
-    X=Nose(1);
-    Y=Nose(2);
-    plot(X,Y,'og');
-    
-    % set the radius for the midline finding circle 
-    Radius = RadFind(BinaryImage,X,Y);   
-    
-    %find a center for the drawn circle that is 2*Radius in the opposite
-    %direction from the centroid
-    [TempCenter(1), TempCenter(2)] = pol2cart(AngleToNext+pi,2*Radius);
-    TempCenter(1) = TempCenter(1)+X;
-    TempCenter(2) = TempCenter(2)+Y;
-    plot(TempCenter(1),TempCenter(2),'og');
-    
-    %this finds a circle on the clicked point and plots it for debug
-    %coordinates of a circle centered on the user point
-    FullCircle = GetArc(TempCenter(1),TempCenter(2),Radius,0,2*pi);     
-    plot(FullCircle(:,1),FullCircle(:,2),'.b');     %debug code
-    hold on
-    %180 degrees of arc centered on the user point
-    FullArc = GetArc(TempCenter(1),TempCenter(2),3*Radius,...
-        AngleToNext-pi/2,AngleToNext+pi/2); 
-    %shows arc that crosses fish body posterior to current point
-    plot(FullArc(:,1),FullArc(:,2),'.r');    
-    
-    FullArc = TrimArc(FishImage,FullArc);    % removes out of bounds values
-    FishArc = FindWhite(FishImage,FullArc);  % narrow the list points to those on the fish
-
-    %first point of midline is user point
-        Centers=[X, Y];     
-    %get the rest of the midline
-        Centers = FindMidPoint(FishImage,FishArc,Centers);    
-    %the auto tracking works better if the next starting point is a bit
-    %back from the nose.
-        X = Centers(3,1); Y = Centers(3,2);
+    plot(X,Y,'ob'); %show the dot the user clicked
     
     Lines(Index).Frame=Index;       %save data in the output structure
     Lines(Index).MidLine=Centers;
@@ -303,7 +195,7 @@ FrameOut(:,end-4:end) = [];
 %Smooth broken bits of fish
 % FrameOut = imclearborder(FrameOut);
 FrameOut = bwareaopen(FrameOut, round(0.001*(m*n)));
-    se = strel('disk',10);
+    se = strel('disk',5);
     FrameOut = imclose(FrameOut,se);
 
 %Remove objects that aren't fish

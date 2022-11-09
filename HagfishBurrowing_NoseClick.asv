@@ -1,10 +1,8 @@
-function sOut = HagfishBurrowing(videoName, varargin)
+function dataStruct = HagfishBurrowing_NoseClick(saveName)
 
-if ~isempty(varargin)
-    sOut = varargin{1};
-else
-    sOut = struct;
-end
+dataStruct = struct;
+[dataStruct.videoName, dataStruct.videoPath] = uigetfile('*.*', ...
+    'Select the video you want to binarize');
 
 FileNamePrefix = VideoReader(videoName);
 FrNum = FileNamePrefix.NumberOfFrames;
@@ -26,6 +24,8 @@ Lines(1).Frame = [];
 Lines(1).MidLine = [];
 X=[];
 Y=[];
+
+FrRate = 
 
     ImStart = read(FileNamePrefix,1);
     
@@ -77,9 +77,8 @@ for Index = startFrame:skipRate:endFrame
     RawImage = imcrop(RawImage, rect);
 %     if (size(X,1) == 0 || BinaryImage(round(Y),round(X)) == 0)
         BinaryImage = ProcessImage(RawImage,ThreshLevel);
-
+%         figure('Name','Click the nose of the Fish','NumberTitle','off')
         imshow(BinaryImage);
-        t('Name','Click the nose of the Fish','NumberTitle','off')
         [X Y] = ginput(1);  %get the location of the fish
 %     end
 %     BinaryImage = ProcessImage(RawImage,ThreshLevel,[X,Y]);

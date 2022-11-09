@@ -1,10 +1,8 @@
-function sOut = HagfishBurrowing(videoName, varargin)
+function dataStruct = HagfishBurrowing_NoseClick()
 
-if ~isempty(varargin)
-    sOut = varargin{1};
-else
-    sOut = struct;
-end
+dataStruct = struct;
+[dataStruct.videoName, dataStruct.videoPath] = uigetfile('*.*', ...
+    'Select the video you want to binarize');
 
 FileNamePrefix = VideoReader(videoName);
 FrNum = FileNamePrefix.NumberOfFrames;
@@ -17,8 +15,9 @@ definput = {'1',num2str(FrNum),'1','outputName'};
 answer = inputdlg(prompt,dlgtitle,dims,definput);
     startFrame = str2num(answer{1});
     endFrame = str2num(answer{2});
-    skipRate = str2num(answer{3});
-    saveName = answer{4};
+    dataStruct.originalFrameRate = str2num(answer{3});
+    skipRate = str2num(answer{4});
+    saveName = answer{5};
 sOut.endFrame = endFrame;
 sOut.skipRate = skipRate;
 
@@ -26,6 +25,8 @@ Lines(1).Frame = [];
 Lines(1).MidLine = [];
 X=[];
 Y=[];
+
+FrRate = dataStruct.originalFrameRate/skipRate;
 
     ImStart = read(FileNamePrefix,1);
     
