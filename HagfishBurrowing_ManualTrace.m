@@ -33,11 +33,16 @@ ImStart = read(vidName,1);
 disp("Crop vieo to zoom in on the critter.")
 rect = CropVideo(ImStart);
 dataStruct.rect = rect;
-
+count = 0;
 for Index = startFrame:skipRate:endFrame
     RawImage = read(vidName,Index);%get the first image to allow user to click the fish
     RawImage = imcrop(RawImage, rect);
     h = figure(1);
+    if count == 0
+    else
+        set(h, 'Position', figProps.Position, 'OuterPosition', ...
+            figProps.OuterPosition, 'InnerPosition', figProps.InnerPosition)
+    end
     imshow(RawImage);
     title(['Frame ',num2str(Index),' out of ',num2str(endFrame)])
     disp("Click along the fish. Be sure to get the nose and tail")
@@ -58,7 +63,14 @@ for Index = startFrame:skipRate:endFrame
     Lines(Index).Frame=Index;       %save data in the output structure
     Lines(Index).MidLine=[X, Y];
     hold off    %allow the image to be redrawn
+    
+    if count == 0
+        figProps = get(h);
+    else
+    end
+    
     close all
+    count = count+1;
 end
 
 digitizedFrames = startFrame:skipRate:endFrame;
@@ -67,27 +79,34 @@ dataStruct.midlines = Lines(digitizedFrames);
 
 nfr = size(dataStruct.midlines,2);
 x = []; y = [];
+figure
+title("Raw Clicked Points")
+hold on
 for i = 1:nfr
-    xPts = sgolayfilt(smooth(dataStruct.midlines(i).MidLine(:,1)), 2, 13);
-    yPts = sgolayfilt(smooth(-dataStruct.midlines(i).MidLine(:,2)), 2, 13);
+    xPts = dataStruct.midlines(i).MidLine(:,1);
+    yPts = -dataStruct.midlines(i).MidLine(:,2);
+    plot(xPts, yPts)
+%     xPts = sgolayfilt(dataStruct.midlines(i).MidLine(:,1), 2, 13);
+%     yPts = sgolayfilt(-dataStruct.midlines(i).MidLine(:,2), 2, 13);
     randPts = rand(1,length(xPts))/1000; xPts = xPts+randPts';
     % Generate equation if the midline
     [pts, deriv, funct] = interparc(21, xPts, yPts, 'spline');
     % add those points to an array
     x = [x,pts(:,1)]; y = [y,pts(:,2)];
 end
+axis equal
 dataStruct.X = x; dataStruct.Y = y;
 
-close all   %close the image
 figure
+title("Sampled 21 equal Points")
 plot(x,y)
 hold on
 p1 = plot(x(end,:), y(end,:), 'b', 'LineWidth',2);
-    cd = [uint8(parula(length(x))*255) uint8(ones(length(x),1))].';
+    cd = [uint8(parula(size(x,2))*255) uint8(ones(size(x,2),1))].';
     drawnow
     set(p1.Edge,'ColorBinding','interpolated', 'ColorData',cd)
 p2 = plot(x(1,:), y(1,:), 'k', 'LineWidth',2);
-    cd = [uint8(parula(length(x))*255) uint8(ones(length(x),1))].';
+    cd = [uint8(parula(size(x,2))*255) uint8(ones(size(x,2),1))].';
     drawnow
     set(p2.Edge,'ColorBinding','interpolated', 'ColorData',cd)
 axis equal
