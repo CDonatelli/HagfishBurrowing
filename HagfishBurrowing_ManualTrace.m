@@ -1,8 +1,9 @@
 % Run as:
 % yourDataName = HagfishBurrowing_ManualTrace()
+% Need the Image Processing Toolbox for getrect()
+% Recomend Signal Processing toolbox for post-processing midlines
 
 function dataStruct = HagfishBurrowing_ManualTrace()
-
 
 dataStruct = struct; % create a structure and give it the name provided by user
 
@@ -114,6 +115,7 @@ for i = 1:nfr
     xPts = dataStruct.midlines(i).MidLine(:,1);
     yPts = -dataStruct.midlines(i).MidLine(:,2);
     plot(xPts, yPts)
+    % Old smoothing functions. Need Signal Processing toolbox
 %     xPts = sgolayfilt(dataStruct.midlines(i).MidLine(:,1), 2, 13);
 %     yPts = sgolayfilt(-dataStruct.midlines(i).MidLine(:,2), 2, 13);
     randPts = rand(1,length(xPts))/1000; xPts = xPts+randPts';
